@@ -115,3 +115,40 @@ for(k in 1:10){
 rmse_cv=sqrt(apply(cv_errors,2,mean))
 plot(rmse_cv,pch=19,type="b")
 ```
+Ridge Regression and the Lasso
+-------------------------------
+We will use the package `glmnet`, which does not use the model formula language, so we will set up an `x` and `y`.
+```{r}
+library(glmnet)
+x=model.matrix(Salary~., -1, data = Hitters)
+y=Hitters$Salary
+```
+We will fit a ridge-regession model. This is achieved by calling `glmnet` with `alpha=0`. There is a `cv.glmnet` function which will do the cross-validation.
+```{r}
+fit_ridge=glmnet(x,y,alpha=0)
+plot(fit_ridge, xvar="lambda", label=TRUE)
+cv_ridge=cv.glmnet(x,y,alpha=0)
+plot(cv_ridge)
+```
+Now we fit a lasso model; for this we use the default `alpha=1`
+```{r}
+fit_lasso=glmnet(x,y)
+plot(fit_lasso, xvar="lambda", label=TRUE)
+cv_lasso=cv.glmnet(x,y)
+plot(cv_lasso)
+coef(cv_lasso)
+```
+
+Suppose we want to use our earlier train/validation division to select the `lambda` for the lasso.
+This is easy to do.
+```{r}
+lasso_tr = glmnet(x[train,],y[train])
+lasso_tr
+pred=predict(lasso_tr, x[-train,])
+dim(pred)
+rmse=sqrt(apply((y[-train]-pred)^2,2,mean))
+plot(log(lasso_tr$lambda), rmse, type="b",xlab="Log(lambda)")
+lam_best=lasso_tr$lambda[order(rmse)[1]]
+lam_best
+coef(lasso_tr, s=lam_best)
+```
